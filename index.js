@@ -1,7 +1,8 @@
 console.log("Bot iniciando...");
 
-const express = require("express")
+const express = require('express')
 const app = express()
+const port = process.env.PORT || 4000 
 
 const {
   default: makeWASocket,
@@ -140,16 +141,12 @@ async function iniciarBot() {
   })
 }
 
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
+
 iniciarBot()
-
-const PORT = process.env.PORT || 3000
-
-app.listen(PORT, () => {
-  console.log("Servidor web ligado")
-})
-
-app.get("/", (req, res) => {
-  res.send("Bot online")
-})
-
-app.listen(3000)
