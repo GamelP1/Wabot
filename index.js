@@ -1,5 +1,8 @@
 console.log("Bot iniciando...");
 
+const express = require("express")
+const app = express()
+
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -138,3 +141,15 @@ async function iniciarBot() {
 }
 
 iniciarBot()
+
+const PORT = process.env.PORT || 3000
+
+app.listen(PORT, () => {
+  console.log("Servidor web ligado")
+})
+
+app.get("/", (req, res) => {
+  res.send("Bot online")
+})
+
+app.listen(3000)
