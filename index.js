@@ -36,7 +36,7 @@ async function pegarVideoTikTok(link) {
   } catch (err) {
     const errorApi = `Erro API: ${err.message}`
     console.log(errorApi)
-    return error
+    return errorApi
   }
 }
 
