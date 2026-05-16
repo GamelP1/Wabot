@@ -37,11 +37,16 @@ async function pegarVideoTikTok(link) {
       data: encodedParams
     })
 
-    return response.data?.data?.hdplay || null
+    return {
+      ok: true,
+      url: response.data?.data?.play
+    }
 
   } catch (err) {
-    console.log('Erro API:', err.message)
-    return null
+    return {
+      ok: false,
+      status: err.response?.status || 500
+    }
   }
 }
 
@@ -143,10 +148,18 @@ async function iniciarBot() {
 
       const videoUrl = await pegarVideoTikTok(texto)
 
-      if (!videoUrl) {
-        await sock.sendMessage(from, {
-         text: `Ocorreu um erro interno na API: ${err.message}`
-        })
+      if (!videoUrl.ok) {
+
+        if (videoUrl.status === 429) {
+          await sock.sendMessage(from, {
+            text: 'Limite atingido, máximo 150 por mês.'
+          })
+
+        } else {
+          await sock.sendMessage(from, {
+            text: `Erro na API (${videoUrl.status})`
+          })
+        }
         return
       }
 
