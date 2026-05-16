@@ -34,8 +34,9 @@ async function pegarVideoTikTok(link) {
 
     return response.data?.data?.play || null
   } catch (err) {
-    console.log('Erro API:', err.message)
-    return null
+    const errorApi = `Erro API: ${err.message}`
+    console.log(errorApi)
+    return error
   }
 }
 
@@ -75,11 +76,11 @@ async function iniciarBot() {
     }
 
     if (connection === 'connecting') {
-      console.log('Conectando...')
+      console.log('Conecting...')
     }
 
     if (connection === 'open') {
-      console.log('Bot conectado com sucesso!')
+      console.log('sucess')
     }
 
     if (connection === 'close') {
@@ -106,9 +107,17 @@ async function iniciarBot() {
     const texto = extrairTexto(msg)
 
     console.log('Mensagem:', texto)
-    if (texto === '/outbot') {
+    if (texto === '/ping') {
+      const start = Date.now()
       await sock.sendMessage(from, {
-       text: 'Até breve, graciosamente:\n> haro v0.10'
+        react: {
+          text: '✔',
+          key: msg.key
+        }
+      })
+      const pingo = Date.now() - start
+      await sock.sendMessage(from, {
+       text: `🚩 ${pingo}ms \n> haro v0.10`
       })
       //process.exit(0)
     }
@@ -124,12 +133,15 @@ async function iniciarBot() {
       texto.includes('tiktok.com')
     ) {
       await sock.sendMessage(from, {
-        text: 'waiting for data...'
+        text: 'baixando...'
       })
 
       const videoUrl = await pegarVideoTikTok(texto)
 
       if (!videoUrl) {
+        await sock.sendMessage(from, {
+         text: `Ocorreu um erro interno na API: ${errorApi}`
+        })
         return
       }
 
