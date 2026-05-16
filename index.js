@@ -20,22 +20,27 @@ const RAPID_API_KEY = 'a9362214f1msh800f35c52da09b4p153459jsn029860f086c9'
 // Converte link do TikTok em vídeo direto
 async function pegarVideoTikTok(link) {
   try {
-    const response = await axios.get(
-      'https://tiktok-video-no-watermark2.p.rapidapi.com/',
-      {
-        params: { url: link, hd: '1' },
-        headers: {
-          'x-rapidapi-key': RAPID_API_KEY,
-          'x-rapidapi-host':
-            'tiktok-video-no-watermark2.p.rapidapi.com'
-        }
-      }
-    )
+    const encodedParams = new URLSearchParams()
 
-    return response.data?.data?.play || null
+    encodedParams.set('url', link)
+    encodedParams.set('hd', '1')
+
+    const response = await axios.request({
+      method: 'POST',
+      url: 'https://tiktok-video-no-watermark2.p.rapidapi.com/',
+      headers: {
+        'x-rapidapi-key': RAPID_API_KEY,
+        'x-rapidapi-host':
+          'tiktok-video-no-watermark2.p.rapidapi.com',
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      data: encodedParams
+    })
+
+    return response.data?.data?.hdplay || null
+
   } catch (err) {
-    const errorApi = `Erro API: ${err.message}`
-    console.log(errorApi)
+    console.log('Erro API:', err.message)
     return null
   }
 }
@@ -140,7 +145,7 @@ async function iniciarBot() {
 
       if (!videoUrl) {
         await sock.sendMessage(from, {
-         text: `Ocorreu um erro interno na API: ${errorApi}`
+         text: `Ocorreu um erro interno na API: ${err.message}`
         })
         return
       }
