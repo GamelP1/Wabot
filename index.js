@@ -160,7 +160,7 @@ async function iniciarBot() {
       const start = Date.now()
       await sock.sendMessage(from, {
         react: {
-          text: '✔',
+          text: '✅',
           key: msg.key
         }
       })
