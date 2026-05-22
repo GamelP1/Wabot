@@ -17,6 +17,30 @@ const axios = require('axios')
 
 const RAPID_API_KEY = 'a9362214f1msh800f35c52da09b4p153459jsn029860f086c9'
 
+// converter link
+async function resolverTikTok(url) {
+  try {
+    const response = await axios.get(url, {
+      maxRedirects: 0,
+      validateStatus: () => true
+    })
+
+    return response.headers.location || null
+
+  } catch (err) {
+    console.error('Erro ao resolver TikTok:', err)
+    return null
+  }
+}
+
+async function obterVideoId(urlCurta) {
+  const urlReal = await resolverTikTok(urlCurta)
+
+  if (!urlReal) return null
+
+  return urlReal.match(/\/video\/(\d+)/)?.[1] || null
+}
+
 // Converte link do TikTok em vídeo direto
 async function pegarVideoTikTok(link) {
   try {
@@ -60,6 +84,7 @@ function extrairTexto(msg) {
     null
   )
 }
+
 
 // Inicia o bot 
 async function iniciarBot() {
@@ -116,6 +141,20 @@ async function iniciarBot() {
     const from = msg.key.remoteJid
     const texto = extrairTexto(msg)
 
+    // separa link
+    const match = texto?.match(
+      /https?:\/\/(?:vt|vm)\.tiktok\.com\/[^\s]+/i
+    )
+    if (match) {
+      const id = await obterVideoId(match[0])
+      console.log('ID do vídeo:', id)
+      await sock.sendMessage(from, {
+        video: { url: `https://www.tikwm.com/video/media/play/${id}.mp4` },
+        caption: ''
+      })
+      return
+    }
+
     console.log('Mensagem:', texto)
     if (texto === '/ping') {
       const start = Date.now()
@@ -137,6 +176,8 @@ async function iniciarBot() {
     if (msg.key.fromMe && !texto.includes('tiktok.com')) return
 
     // Detecta TikTok
+    
+
     if (
       texto.includes('vt.tiktok.com') ||
       texto.includes('vm.tiktok.com') ||
