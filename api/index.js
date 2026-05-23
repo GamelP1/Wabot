@@ -66,3 +66,21 @@ if (
       })
     }
 
+// converter link
+async function resolverTikTok(url) {
+  try {
+    const response = await axios.get(url, {
+      maxRedirects: 0,
+      validateStatus: () => true
+    })
+    return response.headers.location || null
+  } catch (err) {
+    console.error('Erro ao resolver TikTok:', err)
+    return null
+  }
+}
+async function obterVideoId(urlCurta) {
+  const urlReal = await resolverTikTok(urlCurta)
+  if (!urlReal) return null
+  return urlReal.match(/\/video\/(\d+)/)?.[1] || null
+}

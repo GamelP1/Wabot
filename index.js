@@ -10,25 +10,35 @@ const {
 const qrcode = require('qrcode-terminal')
 const P = require('pino')
 const axios = require('axios')
+const fs = require('fs')
+const path = require('path')
 
-// converter link
-async function resolverTikTok(url) {
-  try {
-    const response = await axios.get(url, {
-      maxRedirects: 0,
-      validateStatus: () => true
-    })
-    return response.headers.location || null
-  } catch (err) {
-    console.error('Erro ao resolver TikTok:', err)
-    return null
-  }
+async function downloadTikTok(url) {
+    try {
+        const response = await axios.post('https://www.tikwm.com/api/', {
+            url: url,
+            hd: 1
+        }, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+
+        const data = response.data;
+
+        if (data.code === 0) {
+            const videoUrl = data.data.play; // sem marca d'água
+            
+            // Baixar o vídeo
+            const videoResponse = await axios.get(videoUrl, {
+                responseType: 'arraybuffer'
+            });
+
+            return Buffer.from(videoResponse.data);
+        }
+    } catch (err) {
+        console.error('Erro ao baixar:', err);
+    }
 }
-async function obterVideoId(urlCurta) {
-  const urlReal = await resolverTikTok(urlCurta)
-  if (!urlReal) return null
-  return urlReal.match(/\/video\/(\d+)/)?.[1] || null
-}
+
 // Converte link do TikTok em vídeo direto rapid
 // Extrai texto de qualquer tipo de mensagem
 function extrairTexto(msg) {
@@ -87,14 +97,14 @@ async function iniciarBot() {
     const match = texto?.match(
       /https?:\/\/(?:vt|vm)\.tiktok\.com\/[^\s]+/i
     )
-    if (match) {
-      const id = await obterVideoId(match[0])
-      console.log('ID do vídeo:', id)
-      await sock.sendMessage(from, {
-        video: { url: `https://www.tikwm.com/video/media/play/${id}.mp4` },
-        caption: ''
-      })
-      return
+
+    if (message.includes('tiktok.com')) {
+      const buffer = await downloadTikTok(message);
+      await sock.sendMessage(jid, {
+        video: buffer,
+        mimetype: 'video/mp4',
+        caption: '✅ Sem marca d\'água!'
+      });
     }
 
     if (texto === '/ping') {
@@ -114,6 +124,7 @@ async function iniciarBot() {
     if (msg.key.fromMe && !texto.includes('tiktok.com')) return
   })
 }
+
 
 app.get('/', (req, res) => {
   res.send('Hello World!')
