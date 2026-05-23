@@ -93,18 +93,16 @@ async function iniciarBot() {
     if (!msg?.message) return
     const from = msg.key.remoteJid
     const texto = extrairTexto(msg)
-    // envia video
-    const match = texto?.match(
-      /https?:\/\/(?:vt|vm)\.tiktok\.com\/[^\s]+/i
-    )
 
-    if (message.includes('tiktok.com')) {
-      const buffer = await downloadTikTok(message);
+    // envia video
+    if (texto?.includes('tiktok.com')) {
+      const buffer = await downloadTikTok(texto);
       await sock.sendMessage(jid, {
         video: buffer,
         mimetype: 'video/mp4',
-        caption: '✅ Sem marca d\'água!'
+        caption: ''
       });
+      return;
     }
 
     if (texto === '/ping') {
