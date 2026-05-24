@@ -1,6 +1,4 @@
 const express = require('express')
-const app = express()
-const port = process.env.PORT || 4000 
 const {
   default: makeWASocket,
   useMultiFileAuthState,
@@ -12,35 +10,41 @@ const P = require('pino')
 const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
+const app = express()
+const port = process.env.PORT || 4000 
 
 async function downloadTikTok(url) {
-    try {
-        const response = await axios.post('https://www.tikwm.com/api/', {
-            url: url,
-            hd: 1
-        }, {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        });
+    const params = new URLSearchParams();
+    params.append('id', url);
+    params.append('locale', 'pt');
+    params.append('tt', 'NjZhOTg4');
 
-        const data = response.data;
+    const response = await axios.post('https://ssstik.io/abc?url=dl', params, {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://ssstik.io/'
+        },
+        timeout: 15000
+    });
 
-        if (data.code === 0) {
-            const videoUrl = data.data.play; // sem marca d'água
-            
-            // Baixar o vídeo
-            const videoResponse = await axios.get(videoUrl, {
-                responseType: 'arraybuffer'
-            });
+    const html = response.data;
+    const match = html.match(/href="(https:\/\/tikcdn\.io\/ssstik\/[^"]+)"[^>]*class="[^"]*without_watermark[^"]*"/);
 
-            return Buffer.from(videoResponse.data);
+    if (!match) throw new Error('Link não encontrado');
+
+    const videoResponse = await axios.get(match[1], {
+        responseType: 'arraybuffer',
+        timeout: 30000,
+        headers: {
+            'Referer': 'https://ssstik.io/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
-    } catch (err) {
-        console.error('Erro ao baixar:', err);
-    }
+    });
+
+    return Buffer.from(videoResponse.data);
 }
 
-// Converte link do TikTok em vídeo direto rapid
-// Extrai texto de qualquer tipo de mensagem
 function extrairTexto(msg) {
   return (
     msg.message?.conversation ||
@@ -96,12 +100,25 @@ async function iniciarBot() {
 
     // envia video
     if (texto?.includes('tiktok.com')) {
-      const buffer = await downloadTikTok(texto);
-      await sock.sendMessage(jid, {
-        video: buffer,
-        mimetype: 'video/mp4',
-        caption: ''
-      });
+      const caminhoVideo = path.join(__dirname, `tiktok_${Date.now()}.mp4`);
+      try {
+        const buffer = await downloadTikTok(texto);
+        fs.writeFileSync(caminhoVideo, buffer)
+        await  sock.sendMessage(from, {
+          video: fs.readFileSync(caminhoVideo),
+          mimetype: 'video/mp4',
+          caption: ''
+        })
+      } catch (err) {
+        await sock.sendMessage(from, {
+          react: {
+            text: '❌',
+            key: msg.key
+          }
+        })
+      } finally {
+        if (fs.existsSync(caminhoVideo)) fs.unlinkSync(caminhoVideo);
+      }
       return;
     }
 
@@ -115,7 +132,15 @@ async function iniciarBot() {
       })
       const pingo = Date.now() - start
       await sock.sendMessage(from, {
-       text: `🚩 ${pingo}ms \n> haro v0.10`
+       text: `🚩 ${pingo}ms`,
+       contextInfo: {
+        externalAdReply: {
+          title: 'haro v0.10',
+          body: '',
+          mimetype: 1,
+          renderLargerThumbnail: false
+        }
+       }
       })
     }
     if (!texto) return
