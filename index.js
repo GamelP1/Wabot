@@ -98,7 +98,7 @@ async function iniciarBot() {
     const from = msg.key.remoteJid
     const texto = extrairTexto(msg)
 
-    // envia video
+    // envia video & apaga o buffer
     if (texto?.includes('tiktok.com')) {
       const caminhoVideo = path.join(__dirname, `tiktok_${Date.now()}.mp4`);
       try {
@@ -133,14 +133,6 @@ async function iniciarBot() {
       const pingo = Date.now() - start
       await sock.sendMessage(from, {
        text: `🚩 ${pingo}ms`,
-       contextInfo: {
-        externalAdReply: {
-          title: 'haro v0.10',
-          body: '',
-          mimetype: 1,
-          renderLargerThumbnail: false
-        }
-       }
       })
     }
     if (!texto) return
