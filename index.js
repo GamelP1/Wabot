@@ -143,16 +143,16 @@ async function iniciarBot() {
         const caminho = await textToSpeech(frase);
         await sock.sendMessage(from, {
             audio: fs.readFileSync(caminho),
-            mimetype: 'audio/mp3',
+            mimetype: 'audio/mp4',
             ptt: true // aparece como mensagem de voz
         });
       } catch (err) {
         await sock.sendMessage(from, { text: 'Erro no TTS.' });
       } finally {
         if (fs.existsSync(caminho)) fs.unlinkSync(caminho);
+      }
+      return;
     }
-    return;
-}
 
     if (!texto) return
     if (msg.key.fromMe && !texto.includes('tiktok.com')) return
