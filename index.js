@@ -143,7 +143,7 @@ async function iniciarBot() {
         const caminho = await textToSpeech(frase);
         await sock.sendMessage(from, {
             audio: fs.readFileSync(caminho),
-            mimetype: 'audio/mp3',
+            mimetype: 'audio/mp4',
             ptt: true // aparece como mensagem de voz
         });
       } catch (err) {
