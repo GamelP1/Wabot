@@ -11,7 +11,6 @@ const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
 const app = express()
-const { textToSpeech } = require('./tts')
 const port = process.env.PORT || 4000 
 
 async function downloadTikTok(url) {
@@ -138,20 +137,9 @@ async function iniciarBot() {
     }
 
     if (texto?.startsWith('/tts ')) {
-      const frase = texto.replace('/tts ', '');
-      try {
-        const caminho = await textToSpeech(frase);
-        await sock.sendMessage(from, {
-            audio: fs.readFileSync(caminho),
-            mimetype: 'audio/ogg; codecs=opus',
-            ptt: true // aparece como mensagem de voz
-        });
-      } catch (err) {
-        await sock.sendMessage(from, { text: 'Erro no TTS.' });
-      } finally {
-        if (fs.existsSync(caminho)) fs.unlinkSync(caminho);
-      }
-      return;
+      await sock.sendMessage(from, {
+        text: 'em breve.'
+      })
     }
 
     if (!texto) return
