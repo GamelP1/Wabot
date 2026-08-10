@@ -11,7 +11,8 @@ const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
 const app = express()
-const port = process.env.PORT || 4000 
+const port = process.env.PORT || 4000
+const { upscaleToHD } = require('./upscale');
 
 async function downloadTikTok(url) {
     const params = new URLSearchParams();
@@ -84,7 +85,8 @@ async function iniciarBot() {
         DisconnectReason.loggedOut
 
       console.log('Conexão fechada. Reconectar?', shouldReconnect)
-      if (shouldReconnect) {
+     // iniciarBot()
+	if (shouldReconnect) {
         iniciarBot()
       }
     }
@@ -98,24 +100,46 @@ async function iniciarBot() {
     const from = msg.key.remoteJid
     const texto = extrairTexto(msg)
 
+//    const resposta = await bot.responder(texto);
+//    if (!texto.includes('tiktok.com')) {
+//      await sock.sendMessage(from, { text: resposta })
+//    };
     // envia video & apaga o buffer
     if (texto?.includes('tiktok.com')) {
       const caminhoVideo = path.join(__dirname, `tiktok_${Date.now()}.mp4`);
-      try {
+      await sock.sendMessage(from, {
+        react: {
+          text: '⏳',
+          key: msg.key
+        }
+      });
+	try {
         const buffer = await downloadTikTok(texto);
-        fs.writeFileSync(caminhoVideo, buffer)
-        await  sock.sendMessage(from, {
-          video: fs.readFileSync(caminhoVideo),
+        fs.writeFileSync(caminhoVideo, buffer);
+
+        // faz upscale mantendo a proporção original
+        let videoFinal = caminhoVideo;
+        try {
+          videoFinal = await upscaleToHD(caminhoVideo);
+        } catch (upErr) {
+          console.error('Upscale falhou, enviando original:', upErr.message);
+          videoFinal = caminhoVideo;
+        }
+
+        await sock.sendMessage(from, {
+          video: fs.readFileSync(videoFinal),
           mimetype: 'video/mp4',
           caption: ''
-        })
+        });
+
+        // apaga o arquivo _hd se foi gerado
+        if (videoFinal !== caminhoVideo && fs.existsSync(videoFinal)) {
+          fs.unlinkSync(videoFinal);
+        }
       } catch (err) {
         await sock.sendMessage(from, {
-          react: {
-            text: '❌',
-            key: msg.key
-          }
-        })
+          react: { text: '❌', key: msg.key }
+        });
       } finally {
         if (fs.existsSync(caminhoVideo)) fs.unlinkSync(caminhoVideo);
       }
@@ -153,5 +177,6 @@ app.get('/', (req, res) => {
 })
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
+  console.log(`http://localhost:${port}`)
 })
 iniciarBot()
